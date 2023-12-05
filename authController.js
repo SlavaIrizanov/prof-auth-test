@@ -1,8 +1,18 @@
 const User = require('./models/User')
 const Role = require('./models/Role')
 const bcrypt = require('bcryptjs')
+const jwt = require('jsonwebtoken')
 const {validationResult} = require('express-validator')
+const {secret} = require("./config")
 //здесь все функции по взаимодействию с юзером, т.е. регистрацию авторизацию иполучение пользователей
+
+const generateAccessToken = (id, roles) => {
+    const payload = {
+        id,
+        roles
+    }
+    return jwt.sign(payload, secret, {expiresIn: "24h"})
+}
 class authController {
     async registration(req, res) {
         try {
@@ -29,6 +39,18 @@ class authController {
 
     async login(req, res) {
         try {
+            const {username, password} = req.body
+            const user = await User.findOne({username})
+            if (!user) {
+                return res.status(400).json({message: `User ${username} not found`})
+            }
+            const validPassword = bcrypt.compareSync(password, user.password) // дехашируем пароль, 1й парам пароль , 2-й захеши. из БД
+            if (!user) {
+                return res.status(400).json({message: `Password not valid`})
+            }
+            // след дживити токен JWT token
+            const token = generateAccessToken(user._id, user.roles)
+            return res.json({token})
 
         } catch (e) {
             console.log(e)
@@ -44,9 +66,11 @@ class authController {
             // await userRole.save()
             // await adminRole.save()
             // использовали 1 раз
-            res.json("Server Work")
-        } catch (e) {
 
+            const users = await User.find()
+            res.json(users)
+        } catch (e) {
+            console.log(e)
         }
     }
 }
