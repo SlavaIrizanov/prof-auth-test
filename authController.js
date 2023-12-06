@@ -45,7 +45,7 @@ class authController {
                 return res.status(400).json({message: `User ${username} not found`})
             }
             const validPassword = bcrypt.compareSync(password, user.password) // дехашируем пароль, 1й парам пароль , 2-й захеши. из БД
-            if (!user) {
+            if (!validPassword) {
                 return res.status(400).json({message: `Password not valid`})
             }
             // след дживити токен JWT token
